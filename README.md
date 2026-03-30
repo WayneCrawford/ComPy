@@ -19,82 +19,97 @@ Utilization of advanced signal processing techniques to handle seafloor complian
 
 Before installing ComPy, ensure you have Python and the necessary packages installed. ComPy requires Python 3.x.
 
-# Clone the repository
+## Clone the repository
 git clone https://github.com/your-repository/ComPy.git
 
-# Navigate to the ComPy directory
+## Navigate to the ComPy directory
 cd ComPy
 
-# Install required Python packages
+## Install required Python packages
 pip install numpy matplotlib scipy obspy tiskitpy
 
 # Usage
 
 Here's how you can use ComPy to process your seafloor compliance data:
 
-import compy
-# Generate Timespans to Avoid Because of Earthquakes
+## Generate Timespans to Avoid Because of Earthquakes
 
 To ensure the accuracy of the compliance data, it is crucial to exclude timespans affected by significant seismic events.
 
-## `eq_spans = tiskit.TimeSpans.from_eqs(zdata.stats.starttime, zdata.stats.endtime, minmag=5.5, days_per_magnitude=0.5, save_eq_file=False)`
+```python
+from tiskitpy import TimeSpans
+
+eq_spans = TimeSpans.from_eqs(zdata.stats.starttime, zdata.stats.endtime, minmag=5.5, days_per_magnitude=0.5, save_eq_file=False)
+```
 
 **Function Overview:**
 The `tiskit.TimeSpans.from_eqs` function generates timespans to exclude based on earthquake events within the data recording period. This helps in avoiding data contamination from seismic activities.
 
-- **eq_spans**: Time spans generated to avoid due to earthquakes.
-- **zdata.stats.starttime**: Start time of the data recording.
-- **zdata.stats.endtime**: End time of the data recording.
-- **minmag**: Minimum magnitude of earthquakes to consider.
-- **days_per_magnitude**: Number of days to exclude per unit of earthquake magnitude.
-- **save_eq_file**: Boolean flag to save the earthquake file or not.
+Where ``zdata``is an obspy ``Trace``.
+
+Documentation on the input parameters is [here](https://tiskitpy.readthedocs.io/latest/classes/docstrings/autoclasses/time_spans.html#tiskitpy.TimeSpans.from_eqs)
+
 <p align="center">
   <img src="_Images/EQ_Removal.png" width="750">
 </p>
 
-For further information and examples, visit the [tiskitpy repository](https://github.com/WayneCrawford/tiskitpy/tree/develop/tiskitpy/rptransient).
+## Remove periodic transients
 
-## `rt.calc_timing(zdata, eq_spans)`
+This is only necessary if you have data containing periodic transients (relevels, disk writes) that hinder signal processing.
 
-**Function Overview:**
-The `rt.calc_timing` function calculates and stores a list of periodic transients based on the provided timespans.
+### Create a ``PeriodicTransients object``
 
-- **zdata**: The seismic data.
-- **eq_spans**: Timespans to exclude due to earthquakes.
+```python
+from tiskitpy import PeriodicTransient
+
+rt = PeriodicTransient('hourly', 3628, 10, (-2000, 2000), '2026-01-01T12:30')
+```
+[Documentation on ``PeriodicTransient``](https://tiskitpy.readthedocs.io/latest/classes/docstrings/autoclasses/periodic_transient.html#tiskitpy.PeriodicTransient)
+
+### Calculate the transient period
+
+```python
+rt.calc_timing(zdata, eq_spans)
+```
+
+**Function Overview:** Calculates a list of the exact offsets of periodic transients in the data trace,
+and stores in the PeriodTransient objet.
+
+
 <p align="center">
   <img src="_Images/Glitch_Stack.png" width="700">
 </p>
 
-For further information and examples, visit the [tiskitpy repository](https://github.com/WayneCrawford/tiskitpy/tree/develop/tiskitpy/rptransient).
+### Calculate the transient waveform
 
-## `rt.calc_transients(zdata, eq_spans, plot=False)`
+```python
+rt.calc_transients(zdata, eq_spans, plot=False)
+```
 
-**Function Overview:**
-The `rt.calc_transients` function calculates the transient time parameters from the data within the given timespans.
+**Function Overview:** Calculates the transient's wavefirn
 
-- **zdata**: The seismic data.
-- **eq_spans**: Timespans to exclude due to earthquakes.
-- **plot**: Boolean flag to plot the results or not.
+### Remove the transients
 
-## `cleaned = rt.remove_transients(zdata, plot=False, match=False, prep_filter=False)`
+```python
+cleaned = rt.remove_transients(zdata, plot=False, match=False, prep_filter=False)
+```
 
-**Function Overview:**
-The `rt.remove_transients` function removes transients from the data based on the calculated parameters.
+**Function Overview:** Removes transients from the data trace
 
-- **cleaned**: The data after removing transients.
-- **zdata**: The seismic data.
-- **plot**: Boolean flag to plot the results or not.
-- **match**: Boolean flag to match the transients or not.
-- **prep_filter**: Boolean flag to apply a pre-filtering process or not.
 <p align="center">
   <img src="_Images/Residuals.png" width="750">
 </p>
-For further information and examples, visit the [tiskitpy repository](https://github.com/WayneCrawford/tiskitpy/tree/develop/tiskitpy/rptransient).
 
-## `rotated_stream,azimuth,angle,variance = compy.Rotate(stream_decim,time_window = 1)`
+## Clean vertical channel data using simple rotation
+
+```python
+import compy
+
+rotated_stream,azimuth,angle,variance = compy.Rotate(stream_decim,time_window = 1)`
+```
 
 **Function Overview:**
-The `compy.Rotate` function rotates seismic data to minimize tilt effects and removes coherence noise, enhancing data accuracy for compliance analysis. The default processing window is set to 1 hour but can be adjusted as needed.
+Rotate seismic data to minimize tilt effects and removes coherence noise, enhancing data accuracy for compliance analysis. The default processing window is set to 1 hour but can be adjusted as needed.
 
 - **rotated_stream**: The seismic data stream after rotation and noise removal.
 - **azimuth**: The direction of the rotation applied to correct the tilt in degrees.
@@ -109,6 +124,8 @@ The `compy.Rotate` function rotates seismic data to minimize tilt effects and re
 <p align="center">
   <img src="_Images/DPGCalibration.png" width="750">
 </p>
+
+## Calibrate pressure channel?????
 
 **Function Overview:**
 The `compy.calculate_spectral_ratio` function calculates the spectral ratio of seismic data, specifically targeting high-magnitude earthquake events. This function helps in refining the calibration of seismic data.
@@ -125,8 +142,13 @@ The `compy.calculate_spectral_ratio` function calculates the spectral ratio of s
   <img src="_Images/RR52_Tilt.png" width="800">
 </p>
 
+## Calculate compliance
 
-## `compliance = compy.Calculate_Compliance_beta(stream, f_min_com=0.007, f_max_com=0.02, gain_factor=0.66, time_window=2)`
+```python
+import compy
+
+compliance = compy.Calculate_Compliance_beta(stream, f_min_com=0.007, f_max_com=0.02, gain_factor=0.66, time_window=2)
+```
 
 **Function Overview:**
 The `compy.Calculate_Compliance_beta` function calculates the compliance function with specific window selection criteria to ensure high-quality data. This function is critical for accurate measurement and analysis of seafloor compliance.
@@ -145,10 +167,14 @@ The `compy.Calculate_Compliance_beta` function calculates the compliance functio
   <img src="_Images/Compliance.png" width="800">
 </p>
 
-## `shear_velocity_model = compy.invert_compliance_beta(Data, f, depth_s, starting_model=None, s=None, n_layer=3, sediment_thickness=80, n_sediment_layer=3, sigma_v=25, sigma_h=25, iteration=1000000, alpha=0.25, sta="RR52")`
+## Invert compliance for subsurface structure (1D)
+
+```python
+shear_velocity_model = compy.invert_compliance_beta(Data, f, depth_s, starting_model=None, s=None, n_layer=3, sediment_thickness=80, n_sediment_layer=3, sigma_v=25, sigma_h=25, iteration=1000000, alpha=0.25, sta="RR52")
+```
 
 **Function Overview:**
-The `compy.invert_compliance_beta` function performs a depth-velocity inversion of the compliance function using the Metropolis-Hastings algorithm. This method provides a robust approach to determine the shear velocity structure of the oceanic sub-surface.
+Performs a depth-velocity inversion of the compliance function using the Metropolis-Hastings algorithm. This method provides a robust approach to determine the shear velocity structure of the oceanic sub-surface.
 
 - **Data**: Compliance data.
 - **f**: Frequency of the compliance function.
@@ -168,10 +194,16 @@ The `compy.invert_compliance_beta` function performs a depth-velocity inversion 
 
 - **shear_velocity_model**: The inverted shear velocity model, providing detailed insights into the subsurface shear velocity structure.
 
-## `compy.plot_inversion_density_all(Inversion_container)`
+## Plot inverted model as probability density function
+
+```python
+import compy
+
+compy.plot_inversion_density_all(Inversion_container)
+```
 
 **Function Overview:**
-The `compy.plot_inversion_density_all` function visualizes the inversion results, displaying the shear velocity profiles and the misfit functions for different stations. This helps in assessing the quality and consistency of the inversion process across multiple stations.
+Visualize the inversion results, displaying the shear velocity profiles and the misfit functions for different stations. This helps in assessing the quality and consistency of the inversion process across multiple stations.
 
 - **Inversion_container**: A container that holds the inversion results for different stations. The format should include:
   - **Shear Velocity**: Shear velocity profiles obtained from the inversion.
@@ -182,10 +214,18 @@ The `compy.plot_inversion_density_all` function visualizes the inversion results
   <img src="_Images/Inversion.png" width="500">
 </p>
 
-## `compy.plot_inversion_serpentinization1(Inversion_container)`
+## Plot estimated serpentinization
+
+Plots the estimated serpentinization, assuming that all velocity deviations come from serpentinization
+
+```python
+import compy
+
+compy.plot_inversion_serpentinization1(Inversion_container)
+```
 
 **Function Overview:**
-The `compy.plot_inversion_serpentinization1` function visualizes the extent of serpentinization at various seismic stations. This function helps in understanding the degree of serpentinization and its impact on shear velocity profiles in the oceanic crust.
+Visualize the extent of serpentinization at various seismic stations. This function helps in understanding the degree of serpentinization and its impact on shear velocity profiles in the oceanic crust.
 
 - **Inversion_container**: A container that holds the inversion results for different stations. The format should include:
   - **Shear Velocity**: Shear velocity profiles obtained from the inversion.
@@ -195,8 +235,6 @@ The `compy.plot_inversion_serpentinization1` function visualizes the extent of s
 <p align="center">
   <img src="_Images/Serpentinization.png" width="500">
 </p>
-
-
 
 
 # Plotting Functions
@@ -266,7 +304,8 @@ This project is licensed under the GPL-3.0 License. Please see the LICENSE file 
 
 # Citation
 If you use ComPy in your research, please cite:
-	“Shallow Crustal Structures of the Indian Ocean Derived from Compliance Function Analysis”
+	- Aminian M. A., et al., 2025. Shallow Crustal Structures of the Indian Ocean Derived from Compliance Function Analysis. _Geophys. J. Int._, **242**, 1-16, https://doi.org/10.1093/gji/ggaf253. 
+
 
 # Acknowledgments
 
