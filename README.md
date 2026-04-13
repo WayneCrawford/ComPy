@@ -215,6 +215,8 @@ This function calculates the compliance function with specific window selection 
 ## Invert compliance data for a subsurface shear velocity model
 
 ```python
+import compy
+
 shear_velocity_model = compy.invert_compliance_beta(Data, f, depth_s, starting_model=None, s=None, n_layer=3, sediment_thickness=80, n_sediment_layer=3, sigma_v=25, sigma_h=25, iteration=1000000, alpha=0.25, sta="RR52")
 ```
 
