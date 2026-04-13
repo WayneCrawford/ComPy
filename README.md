@@ -59,7 +59,7 @@ For further information and examples, visit the [tiskitpy repository](https://gi
 
 ## Remove Transients
 
-See https://tiskitpy.readthedocs.io/latest/periodic_transients.html
+For further information and examples, visit the [tiskitpy PeriodicTransient documentation](https://tiskitpy.readthedocs.io/latest/periodic_transients.html).
 
 ### Calculate the periodicity and start time of the transients
 
@@ -70,7 +70,7 @@ pt.calc_timing(zdata, eq_spans)
 ```
 
 **Function Overview:**
-The `rt.calc_timing` function calculates and stores a list of periodic transients based on the provided timespans.
+This function calculates and stores a list of periodic transients based on the provided timespans.
 
 - **zdata**: The seismic data.
 - **eq_spans**: Timespans to exclude due to earthquakes.
@@ -78,21 +78,32 @@ The `rt.calc_timing` function calculates and stores a list of periodic transient
   <img src="_Images/Glitch_Stack.png" width="700">
 </p>
 
-For further information and examples, visit the [tiskitpy repository](https://github.com/WayneCrawford/tiskitpy/tree/develop/tiskitpy/rptransient).
 
-## `rt.calc_transients(zdata, eq_spans, plot=False)`
+### Calculate the mean shape of the transient
+
+```python
+from tiskitpy import PeriodicTransient as pt
+
+rt.calc_transients(zdata, eq_spans, plot=False)
+```
 
 **Function Overview:**
-The `rt.calc_transients` function calculates the transient time parameters from the data within the given timespans.
+This function calculates the transient time parameters from the data within the given timespans.
 
 - **zdata**: The seismic data.
 - **eq_spans**: Timespans to exclude due to earthquakes.
 - **plot**: Boolean flag to plot the results or not.
 
-## `cleaned = rt.remove_transients(zdata, plot=False, match=False, prep_filter=False)`
+### Remove transients from the data
+
+```python
+from tiskitpy import PeriodicTransient as pt
+
+cleaned = pt.remove_transients(zdata, plot=False, match=False, prep_filter=False)
+```
 
 **Function Overview:**
-The `rt.remove_transients` function removes transients from the data based on the calculated parameters.
+This function removes transients from the data based on the calculated parameters.
 
 - **cleaned**: The data after removing transients.
 - **zdata**: The seismic data.
@@ -104,10 +115,16 @@ The `rt.remove_transients` function removes transients from the data based on th
 </p>
 For further information and examples, visit the [tiskitpy repository](https://github.com/WayneCrawford/tiskitpy/tree/develop/tiskitpy/rptransient).
 
-## `rotated_stream,azimuth,angle,variance = compy.Rotate(stream_decim,time_window = 1)`
+## Rotate seismic data to minimize tilt effects
+
+```python
+import compy
+
+rotated_stream,azimuth,angle,variance = compy.Rotate(stream_decim,time_window = 1)
+```
 
 **Function Overview:**
-The `compy.Rotate` function rotates seismic data to minimize tilt effects and removes coherence noise, enhancing data accuracy for compliance analysis. The default processing window is set to 1 hour but can be adjusted as needed.
+This function rotates seismic data to minimize tilt effects and removes coherence noise, enhancing data accuracy for compliance analysis. The default processing window is set to 1 hour but can be adjusted as needed.
 
 - **rotated_stream**: The seismic data stream after rotation and noise removal.
 - **azimuth**: The direction of the rotation applied to correct the tilt in degrees.
@@ -122,6 +139,11 @@ The `compy.Rotate` function rotates seismic data to minimize tilt effects and re
 <p align="center">
   <img src="_Images/DPGCalibration.png" width="750">
 </p>
+
+## Calibrate the pressure gauge
+
+We calibrate the pressure gauge by calculaing the pressure-acceleration spectral ratio in the ambient
+Rayleigh wave band and comparing to the expected value
 
 **Function Overview:**
 The `compy.calculate_spectral_ratio` function calculates the spectral ratio of seismic data, specifically targeting high-magnitude earthquake events. This function helps in refining the calibration of seismic data.
@@ -138,8 +160,13 @@ The `compy.calculate_spectral_ratio` function calculates the spectral ratio of s
   <img src="_Images/RR52_Tilt.png" width="800">
 </p>
 
+## Calculate seafloor compliance
 
-## `compliance = compy.Calculate_Compliance_beta(stream, f_min_com=0.007, f_max_com=0.02, gain_factor=0.66, time_window=2)`
+```python
+import compy
+
+compliance = compy.Calculate_Compliance_beta(stream, f_min_com=0.007, f_max_com=0.02, gain_factor=0.66, time_window=2)
+```
 
 **Function Overview:**
 The `compy.Calculate_Compliance_beta` function calculates the compliance function with specific window selection criteria to ensure high-quality data. This function is critical for accurate measurement and analysis of seafloor compliance.
@@ -158,10 +185,14 @@ The `compy.Calculate_Compliance_beta` function calculates the compliance functio
   <img src="_Images/Compliance.png" width="800">
 </p>
 
-## `shear_velocity_model = compy.invert_compliance_beta(Data, f, depth_s, starting_model=None, s=None, n_layer=3, sediment_thickness=80, n_sediment_layer=3, sigma_v=25, sigma_h=25, iteration=1000000, alpha=0.25, sta="RR52")`
+## Invert compliance data for a subsurface shear velocity model
+
+```python
+shear_velocity_model = compy.invert_compliance_beta(Data, f, depth_s, starting_model=None, s=None, n_layer=3, sediment_thickness=80, n_sediment_layer=3, sigma_v=25, sigma_h=25, iteration=1000000, alpha=0.25, sta="RR52")
+```
 
 **Function Overview:**
-The `compy.invert_compliance_beta` function performs a depth-velocity inversion of the compliance function using the Metropolis-Hastings algorithm. This method provides a robust approach to determine the shear velocity structure of the oceanic sub-surface.
+This function performs a depth-velocity inversion of the compliance function using the Metropolis-Hastings algorithm. This method provides a robust approach to determine the shear velocity structure of the oceanic sub-surface.
 
 - **Data**: Compliance data.
 - **f**: Frequency of the compliance function.
@@ -181,7 +212,13 @@ The `compy.invert_compliance_beta` function performs a depth-velocity inversion 
 
 - **shear_velocity_model**: The inverted shear velocity model, providing detailed insights into the subsurface shear velocity structure.
 
-## `compy.plot_inversion_density_all(Inversion_container)`
+## Show the inversion results as a density plot
+
+```python
+import compy
+
+compy.plot_inversion_density_all(Inversion_container)
+```
 
 **Function Overview:**
 The `compy.plot_inversion_density_all` function visualizes the inversion results, displaying the shear velocity profiles and the misfit functions for different stations. This helps in assessing the quality and consistency of the inversion process across multiple stations.
@@ -195,7 +232,15 @@ The `compy.plot_inversion_density_all` function visualizes the inversion results
   <img src="_Images/Inversion.png" width="500">
 </p>
 
-## `compy.plot_inversion_serpentinization1(Inversion_container)`
+## Interpret inversion results in terms of serpentinization
+
+Assumes that all velocity anomalies are caused by serpentinzation
+
+```python
+import compy
+
+compy.plot_inversion_serpentinization1(Inversion_container)
+```
 
 **Function Overview:**
 The `compy.plot_inversion_serpentinization1` function visualizes the extent of serpentinization at various seismic stations. This function helps in understanding the degree of serpentinization and its impact on shear velocity profiles in the oceanic crust.
@@ -210,11 +255,15 @@ The `compy.plot_inversion_serpentinization1` function visualizes the extent of s
 </p>
 
 
-
-
 # Plotting Functions
 
-## `fp.coherogram_spectrogram_alpha(rotated_stream)`
+## coherogram_spectrogram
+
+```python
+import ffplot
+
+ffplot.coherogram_spectrogram_alpha(rotated_stream)
+```
 
 This function plots spectrograms that feature average values within the compliance frequency band. The output includes several panels:
 
@@ -230,7 +279,11 @@ Black dashed lines indicate the frequency limits of the compliance band. Green s
   <img src="_Images/RR52_window_selection.png" width="800">
 </p>
 
-## `compy.plot_transfer_function(st, nseg=2**12, TP=5)`
+```python
+import ffplot
+
+ffplot.plot_transfer_function(st, nseg=2**12, TP=5)
+```
 
 **Function Overview:**
 The `compy.plot_transfer_function` function plots the transfer function between different seismic data channels. This helps in visualizing the relationship and coherence between channels, which is crucial for accurate seismic data analysis.
@@ -241,12 +294,16 @@ The `compy.plot_transfer_function` function plots the transfer function between 
 
 **Returns:**
 
-- This function generates a plot of the transfer function, aiding in the identification of coherent noise and its removal for enhanced data quality.
+This function generates a plot of the transfer function, aiding in the identification of coherent noise and its removal for enhanced data quality.
 <p align="center">
   <img src="_Images/Transferfunction.png" width="800">
 </p>
 
-## `compy.psd_h_all(st, st1, st2, st3, tw=6, nseg=2**11, treshhold_high=1e-14, treshhold_low=1e-17)`
+```python
+import ffplot
+
+ffplot.psd_h_all(st, st1, st2, st3, tw=6, nseg=2**11, treshhold_high=1e-14, treshhold_low=1e-17)`
+```
 
 **Function Overview:**
 The `compy.psd_h_all` function performs Power Spectral Density (PSD) analysis on seismic data streams to identify and characterize various types of noise and signals across different preprocessing stages. This function helps in evaluating the effectiveness of data preprocessing steps.
