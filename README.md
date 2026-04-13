@@ -150,13 +150,8 @@ This function rotates seismic data to minimize tilt effects and removes coherenc
 - **angle**: The angle of tilt correction applied to the seismic data.
 - **variance**: The reducted variance ratio (After/Before), indicating the effectiveness of noise reduction.
 
-
 <p align="center">
-  <img src="_Images/DPGCalibration_Signal.png" width="750">
-</p>
-
-<p align="center">
-  <img src="_Images/DPGCalibration.png" width="750">
+  <img src="_Images/RR52_Tilt.png" width="800">
 </p>
 
 ## Calibrate the pressure gauge
@@ -183,7 +178,11 @@ This function calculates the spectral ratio of seismic data, specifically target
 - **plot_condition**: Boolean flag to plot the condition or not. The default is False.
 
 <p align="center">
-  <img src="_Images/RR52_Tilt.png" width="800">
+  <img src="_Images/DPGCalibration_Signal.png" width="750">
+</p>
+
+<p align="center">
+  <img src="_Images/DPGCalibration.png" width="750">
 </p>
 
 ## Calculate seafloor compliance
