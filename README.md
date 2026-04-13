@@ -30,9 +30,8 @@ pip install numpy matplotlib scipy obspy tiskitpy
 
 # Usage
 
-Here's how you can use ComPy to process your seafloor compliance data:
+Here's how you can use ComPy and tiskitpy to process your seafloor compliance data:
 
-import compy
 ## Generate Timespans to Avoid Because of Earthquakes
 
 To ensure the accuracy of the compliance data, it is crucial to exclude timespans affected by significant seismic events.
