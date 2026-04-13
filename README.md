@@ -42,7 +42,7 @@ eq_spans = tiskitpy.TimeSpans.from_eqs(zdata.stats.starttime, zdata.stats.endtim
 ```
 
 **Function Overview:**
-The `tiskit.TimeSpans.from_eqs` function generates timespans to exclude based on earthquake events within the data recording period. This helps in avoiding data contamination from seismic activities.
+The `tiskit.TimeSpans.from_eqs` function generates timespans to exclude based on earthquake events within the data recording period.
 
 - **eq_spans**: Time spans generated to avoid due to earthquakes.
 - **zdata.stats.starttime**: Start time of the data recording.
