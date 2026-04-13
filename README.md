@@ -11,21 +11,21 @@ ComPy is a specialized software tool designed for the automated processing and a
 
 # Features
 
-Automation of data pre-processing steps including glitch removal, tilt effect minimization, and pressure gauge calibration.
-Implementation of the Metropolis-Hastings algorithm for robust depth-velocity inversion.
-Utilization of advanced signal processing techniques to handle seafloor compliance data.
+- Automation of data pre-processing steps including glitch removal, tilt effect minimization, and pressure gauge calibration.
+- Implementation of the Metropolis-Hastings algorithm for robust depth-velocity inversion.
+- Utilization of advanced signal processing techniques to handle seafloor compliance data.
 
 # Installation
 
 Before installing ComPy, ensure you have Python and the necessary packages installed. ComPy requires Python 3.x.
 
-# Clone the repository
+## Clone the repository
 git clone https://github.com/your-repository/ComPy.git
 
-# Navigate to the ComPy directory
+## Navigate to the ComPy directory
 cd ComPy
 
-# Install required Python packages
+## Install required Python packages
 pip install numpy matplotlib scipy obspy tiskitpy
 
 # Usage
@@ -33,11 +33,14 @@ pip install numpy matplotlib scipy obspy tiskitpy
 Here's how you can use ComPy to process your seafloor compliance data:
 
 import compy
-# Generate Timespans to Avoid Because of Earthquakes
+## Generate Timespans to Avoid Because of Earthquakes
 
 To ensure the accuracy of the compliance data, it is crucial to exclude timespans affected by significant seismic events.
 
-## `eq_spans = tiskit.TimeSpans.from_eqs(zdata.stats.starttime, zdata.stats.endtime, minmag=5.5, days_per_magnitude=0.5, save_eq_file=False)`
+```python
+import tiskitpy
+eq_spans = tiskit.TimeSpans.from_eqs(zdata.stats.starttime, zdata.stats.endtime, minmag=5.5, days_per_magnitude=0.5, save_eq_file=False)
+```
 
 **Function Overview:**
 The `tiskit.TimeSpans.from_eqs` function generates timespans to exclude based on earthquake events within the data recording period. This helps in avoiding data contamination from seismic activities.
@@ -54,7 +57,17 @@ The `tiskit.TimeSpans.from_eqs` function generates timespans to exclude based on
 
 For further information and examples, visit the [tiskitpy repository](https://github.com/WayneCrawford/tiskitpy/tree/develop/tiskitpy/rptransient).
 
-## `rt.calc_timing(zdata, eq_spans)`
+## Remove Transients
+
+See https://tiskitpy.readthedocs.io/latest/periodic_transients.html
+
+### Calculate the periodicity and start time of the transients
+
+```python
+from tiskitpy import PeriodicTransient as pt
+
+pt.calc_timing(zdata, eq_spans)
+```
 
 **Function Overview:**
 The `rt.calc_timing` function calculates and stores a list of periodic transients based on the provided timespans.
