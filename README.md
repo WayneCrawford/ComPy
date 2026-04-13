@@ -90,7 +90,7 @@ This function calculates and stores a list of periodic transients based on the p
 ```python
 from tiskitpy import PeriodicTransient as pt
 
-rt.calc_transients(zdata, eq_spans, plot=False)
+pt.calc_transients(zdata, eq_spans, plot=False)
 ```
 
 This function calculates the transient time parameters from the data within the given timespans.
@@ -113,11 +113,14 @@ This function removes transients from the data based on the calculated parameter
 
 **Parameters**:
 
-- **cleaned**: The data after removing transients.
-- **zdata**: The seismic data.
-- **plot**: Boolean flag to plot the results or not.
-- **match**: Boolean flag to match the transients or not.
-- **prep_filter**: Boolean flag to apply a pre-filtering process or not.
+- **zdata** (_obspy.core.stream trace_): The seismic data.
+- **plot** (_bool_): Boolean flag to plot the results or not.
+- **match** (_bool): Boolean flag to match the transients or not.
+- **prep_filter** (_bool): Boolean flag to apply a pre-filtering process or not.
+
+**Returns**:
+
+- **cleaned**(_obspy.core.stream trace_): The data after removing transients.
 
 <p align="center">
   <img src="_Images/Residuals.png" width="750">
@@ -130,14 +133,19 @@ For further information and examples, visit the [tiskitpy repository](https://gi
 ```python
 import compy
 
-rotated_stream,azimuth,angle,variance = compy.Rotate(stream_decim,time_window = 1)
+rotated_stream,azimuth,angle,variance = compy.Rotate(stream_decim)
 ```
 
 This function rotates seismic data to minimize tilt effects and removes coherence noise, enhancing data accuracy for compliance analysis. The default processing window is set to 1 hour but can be adjusted as needed.
 
 **Parameters**:
 
-- **rotated_stream**: The seismic data stream after rotation and noise removal.
+- **stream** (_obspy.core.stream.stream_): The seismic data stream after rotation and noise removal.
+- **time_window** (_float_): Processing window in hours (_default=1_)
+
+**Returns**:
+
+- **rotated_stream** (_obspy.core.stream.stream_): The seismic data stream after rotation and noise removal.
 - **azimuth**: The direction of the rotation applied to correct the tilt in degrees.
 - **angle**: The angle of tilt correction applied to the seismic data.
 - **variance**: The reducted variance ratio (After/Before), indicating the effectiveness of noise reduction.
@@ -249,6 +257,7 @@ This function visualizes the inversion results, displaying the shear velocity pr
   - **Misfit Function**: Misfit function values indicating the quality of the inversion fit.
   - **Station**: Identifier for the seismic station.
   - **mis_fit_trsh**: Threshold value for the misfit function.
+
 <p align="center">
   <img src="_Images/Inversion.png" width="500">
 </p>
