@@ -38,7 +38,7 @@ To ensure the accuracy of the compliance data, it is crucial to exclude timespan
 
 ```python
 import tiskitpy
-eq_spans = tiskit.TimeSpans.from_eqs(zdata.stats.starttime, zdata.stats.endtime, minmag=5.5, days_per_magnitude=0.5, save_eq_file=False)
+eq_spans = tiskitpy.TimeSpans.from_eqs(zdata.stats.starttime, zdata.stats.endtime, minmag=5.5, days_per_magnitude=0.5, save_eq_file=False)
 ```
 
 **Function Overview:**
