@@ -8,6 +8,7 @@
 # Overview
 
 ComPy is a specialized software tool designed for the automated processing and analysis of seafloor compliance data. It enhances the precision of subsurface shear velocity models using Broadband Ocean-Bottom Stations data from the Indian Ocean. ComPy is tailored to manage extensive data processing steps, ensuring high resolution and accuracy in geological analysis.
+
 ComPy accompanies the methodology presented in Aminian et al. (2025), published in *Geophysical Journal International*:
 
 Aminian, M. A., Crawford, W., Stutzmann, É., Montagner, J.-P., Cannat, M., & Hadziioannou, C. (2025). *Shallow crustal structures of the Indian ocean derived from compliance function analysis*. Geophysical Journal International, 242(3), ggaf253. https://doi.org/10.1093/gji/ggaf253
