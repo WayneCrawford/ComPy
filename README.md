@@ -11,107 +11,163 @@ ComPy is a specialized software tool designed for the automated processing and a
 
 # Features
 
-Automation of data pre-processing steps including glitch removal, tilt effect minimization, and pressure gauge calibration.
-Implementation of the Metropolis-Hastings algorithm for robust depth-velocity inversion.
-Utilization of advanced signal processing techniques to handle seafloor compliance data.
+- Automation of data pre-processing steps including glitch removal, tilt effect minimization, and pressure gauge calibration.
+- Implementation of the Metropolis-Hastings algorithm for robust depth-velocity inversion.
+- Utilization of advanced signal processing techniques to handle seafloor compliance data.
 
 # Installation
 
 Before installing ComPy, ensure you have Python and the necessary packages installed. ComPy requires Python 3.x.
 
-# Clone the repository
+## Clone the repository
 git clone https://github.com/your-repository/ComPy.git
 
-# Navigate to the ComPy directory
+## Navigate to the ComPy directory
 cd ComPy
 
-# Install required Python packages
+## Install required Python packages
 pip install numpy matplotlib scipy obspy tiskitpy
 
 # Usage
 
-Here's how you can use ComPy to process your seafloor compliance data:
+Here's how you can use ComPy and tiskitpy to process your seafloor compliance data:
 
-import compy
-# Generate Timespans to Avoid Because of Earthquakes
+## Generate Timespans to Avoid Because of Earthquakes
 
 To ensure the accuracy of the compliance data, it is crucial to exclude timespans affected by significant seismic events.
 
-## `eq_spans = tiskit.TimeSpans.from_eqs(zdata.stats.starttime, zdata.stats.endtime, minmag=5.5, days_per_magnitude=0.5, save_eq_file=False)`
+```python
+import tiskitpy
 
-**Function Overview:**
-The `tiskit.TimeSpans.from_eqs` function generates timespans to exclude based on earthquake events within the data recording period. This helps in avoiding data contamination from seismic activities.
+eq_spans = tiskitpy.TimeSpans.from_eqs(zdata.stats.starttime, zdata.stats.endtime, minmag=5.5, days_per_magnitude=0.5, save_eq_file=False)
+```
 
-- **eq_spans**: Time spans generated to avoid due to earthquakes.
-- **zdata.stats.starttime**: Start time of the data recording.
-- **zdata.stats.endtime**: End time of the data recording.
-- **minmag**: Minimum magnitude of earthquakes to consider.
-- **days_per_magnitude**: Number of days to exclude per unit of earthquake magnitude.
-- **save_eq_file**: Boolean flag to save the earthquake file or not.
+This function generates timespans to exclude based on earthquake events within the data recording period.
+
+**Parameters**:
+
+- **time_bounds** (_tuple, obspy.stream.Stream or obspy.stream.Trace_): time bounds to use. Bounds are forced to be beginning (startime) and end (endtime) of a day  
+- **minmag** (_float_): EQ Magnitude above which to cut out times  
+- **days_per_magnitude** (_float_): days to cut per magnitude above min_magnitude  
+- **eq_file** (_str_): the eq filename (otherwise, generates it)  
+- **save_eq_file** (_bool_): save the catalog file for future use 
+
+**Returns** (_TimeSpans object_): time spans covering EQ signal  
+
+
 <p align="center">
   <img src="_Images/EQ_Removal.png" width="750">
 </p>
 
-For further information and examples, visit the [tiskitpy repository](https://github.com/WayneCrawford/tiskitpy/tree/develop/tiskitpy/rptransient).
+For further information and examples, visit the [tiskitpy TimeSpans documentation](https://tiskitpy.readthedocs.io/latest/classes/time_spans.html).
 
-## `rt.calc_timing(zdata, eq_spans)`
+## Remove Transients
 
-**Function Overview:**
-The `rt.calc_timing` function calculates and stores a list of periodic transients based on the provided timespans.
+For further information and examples, visit the [tiskitpy PeriodicTransient documentation](https://tiskitpy.readthedocs.io/latest/periodic_transients.html).
 
-- **zdata**: The seismic data.
-- **eq_spans**: Timespans to exclude due to earthquakes.
+### Calculate the periodicity and start time of the transients
+
+```python
+from tiskitpy import PeriodicTransient as pt
+
+pt.calc_timing(zdata, eq_spans)
+```
+
+This function calculates and stores a list of periodic transients based on the provided timespans.
+
+**Parameters**:
+
+- **zdata** (_obspy.core.stream trace_): The seismic data.
+- **eq_spans** (_tiskitpy.TimeSpans_): Timespans to exclude due to earthquakes.
+
 <p align="center">
   <img src="_Images/Glitch_Stack.png" width="700">
 </p>
 
-For further information and examples, visit the [tiskitpy repository](https://github.com/WayneCrawford/tiskitpy/tree/develop/tiskitpy/rptransient).
 
-## `rt.calc_transients(zdata, eq_spans, plot=False)`
+### Calculate the mean shape of the transient
 
-**Function Overview:**
-The `rt.calc_transients` function calculates the transient time parameters from the data within the given timespans.
+```python
+from tiskitpy import PeriodicTransient as pt
 
-- **zdata**: The seismic data.
-- **eq_spans**: Timespans to exclude due to earthquakes.
-- **plot**: Boolean flag to plot the results or not.
+pt.calc_transients(zdata, eq_spans, plot=False)
+```
 
-## `cleaned = rt.remove_transients(zdata, plot=False, match=False, prep_filter=False)`
+This function calculates the transient time parameters from the data within the given timespans.
 
-**Function Overview:**
-The `rt.remove_transients` function removes transients from the data based on the calculated parameters.
+**Parameters**:
 
-- **cleaned**: The data after removing transients.
-- **zdata**: The seismic data.
-- **plot**: Boolean flag to plot the results or not.
-- **match**: Boolean flag to match the transients or not.
-- **prep_filter**: Boolean flag to apply a pre-filtering process or not.
+- **zdata** (_obspy.core.stream trace_): The seismic data.
+- **eq_spans** (_tiskitpy.TimeSpans_): Timespans to exclude due to earthquakes.
+- **plot** (_bool_): Boolean flag to plot the results or not.
+
+### Remove transients from the data
+
+```python
+from tiskitpy import PeriodicTransient as pt
+
+cleaned = pt.remove_transients(zdata, plot=False, match=False, prep_filter=False)
+```
+
+This function removes transients from the data based on the calculated parameters.
+
+**Parameters**:
+
+- **zdata** (_obspy.core.stream trace_): The seismic data.
+- **plot** (_bool_): Boolean flag to plot the results or not.
+- **match** (_bool): Boolean flag to match the transients or not.
+- **prep_filter** (_bool): Boolean flag to apply a pre-filtering process or not.
+
+**Returns**:
+
+- **cleaned**(_obspy.core.stream trace_): The data after removing transients.
+
 <p align="center">
   <img src="_Images/Residuals.png" width="750">
 </p>
+
 For further information and examples, visit the [tiskitpy repository](https://github.com/WayneCrawford/tiskitpy/tree/develop/tiskitpy/rptransient).
 
-## `rotated_stream,azimuth,angle,variance = compy.Rotate(stream_decim,time_window = 1)`
+## Rotate seismic data to minimize tilt effects
 
-**Function Overview:**
-The `compy.Rotate` function rotates seismic data to minimize tilt effects and removes coherence noise, enhancing data accuracy for compliance analysis. The default processing window is set to 1 hour but can be adjusted as needed.
+```python
+import compy
 
-- **rotated_stream**: The seismic data stream after rotation and noise removal.
+rotated_stream,azimuth,angle,variance = compy.Rotate(stream_decim)
+```
+
+This function rotates seismic data to minimize tilt effects and removes coherence noise, enhancing data accuracy for compliance analysis. The default processing window is set to 1 hour but can be adjusted as needed.
+
+**Parameters**:
+
+- **stream** (_obspy.core.stream.stream_): The seismic data stream after rotation and noise removal.
+- **time_window** (_float_): Processing window in hours (_default=1_)
+
+**Returns**:
+
+- **rotated_stream** (_obspy.core.stream.stream_): The seismic data stream after rotation and noise removal.
 - **azimuth**: The direction of the rotation applied to correct the tilt in degrees.
 - **angle**: The angle of tilt correction applied to the seismic data.
 - **variance**: The reducted variance ratio (After/Before), indicating the effectiveness of noise reduction.
 
-
 <p align="center">
-  <img src="_Images/DPGCalibration_Signal.png" width="750">
+  <img src="_Images/RR52_Tilt.png" width="800">
 </p>
 
-<p align="center">
-  <img src="_Images/DPGCalibration.png" width="750">
-</p>
+## Calibrate the pressure gauge
 
-**Function Overview:**
-The `compy.calculate_spectral_ratio` function calculates the spectral ratio of seismic data, specifically targeting high-magnitude earthquake events. This function helps in refining the calibration of seismic data.
+We calibrate the pressure gauge by calculaing the pressure-acceleration spectral ratio in the ambient
+Rayleigh wave band and comparing to the expected value
+
+```
+import python
+
+compy.calculate_spectral_ratio(...)
+```
+
+This function calculates the spectral ratio of seismic data, specifically targeting high-magnitude earthquake events. This function helps in refining the calibration of seismic data.
+
+**Parameters**:
 
 - **stream**: The raw seismic data stream before removing instrument response.
 - **mag**: Minimum magnitude of earthquakes to consider for the calculation. The default is 7.
@@ -122,14 +178,24 @@ The `compy.calculate_spectral_ratio` function calculates the spectral ratio of s
 - **plot_condition**: Boolean flag to plot the condition or not. The default is False.
 
 <p align="center">
-  <img src="_Images/RR52_Tilt.png" width="800">
+  <img src="_Images/DPGCalibration_Signal.png" width="750">
 </p>
 
+<p align="center">
+  <img src="_Images/DPGCalibration.png" width="750">
+</p>
 
-## `compliance = compy.Calculate_Compliance_beta(stream, f_min_com=0.007, f_max_com=0.02, gain_factor=0.66, time_window=2)`
+## Calculate seafloor compliance
 
-**Function Overview:**
-The `compy.Calculate_Compliance_beta` function calculates the compliance function with specific window selection criteria to ensure high-quality data. This function is critical for accurate measurement and analysis of seafloor compliance.
+```python
+import compy
+
+compliance = compy.Calculate_Compliance_beta(stream, f_min_com=0.007, f_max_com=0.02, gain_factor=0.66, time_window=2)
+```
+
+This function calculates the compliance function with specific window selection criteria to ensure high-quality data. This function is critical for accurate measurement and analysis of seafloor compliance.
+
+**Parameters**:
 
 - **stream**: The raw seismic data stream before processing.
 - **f_min_com**: Low frequency corner of the compliance band. The default is 0.007.
@@ -145,10 +211,17 @@ The `compy.Calculate_Compliance_beta` function calculates the compliance functio
   <img src="_Images/Compliance.png" width="800">
 </p>
 
-## `shear_velocity_model = compy.invert_compliance_beta(Data, f, depth_s, starting_model=None, s=None, n_layer=3, sediment_thickness=80, n_sediment_layer=3, sigma_v=25, sigma_h=25, iteration=1000000, alpha=0.25, sta="RR52")`
+## Invert compliance data for a subsurface shear velocity model
 
-**Function Overview:**
-The `compy.invert_compliance_beta` function performs a depth-velocity inversion of the compliance function using the Metropolis-Hastings algorithm. This method provides a robust approach to determine the shear velocity structure of the oceanic sub-surface.
+```python
+import compy
+
+shear_velocity_model = compy.invert_compliance_beta(Data, f, depth_s, starting_model=None, s=None, n_layer=3, sediment_thickness=80, n_sediment_layer=3, sigma_v=25, sigma_h=25, iteration=1000000, alpha=0.25, sta="RR52")
+```
+
+This function performs a depth-velocity inversion of the compliance function using the Metropolis-Hastings algorithm. This method provides a robust approach to determine the shear velocity structure of the oceanic sub-surface.
+
+**Parameters**:
 
 - **Data**: Compliance data.
 - **f**: Frequency of the compliance function.
@@ -168,42 +241,66 @@ The `compy.invert_compliance_beta` function performs a depth-velocity inversion 
 
 - **shear_velocity_model**: The inverted shear velocity model, providing detailed insights into the subsurface shear velocity structure.
 
-## `compy.plot_inversion_density_all(Inversion_container)`
+## Show the inversion results as a density plot
 
-**Function Overview:**
-The `compy.plot_inversion_density_all` function visualizes the inversion results, displaying the shear velocity profiles and the misfit functions for different stations. This helps in assessing the quality and consistency of the inversion process across multiple stations.
+```python
+import compy
+
+compy.plot_inversion_density_all(Inversion_container)
+```
+
+This function visualizes the inversion results, displaying the shear velocity profiles and the misfit functions for different stations. This helps in assessing the quality and consistency of the inversion process across multiple stations.
+
+**Parameters**:
 
 - **Inversion_container**: A container that holds the inversion results for different stations. The format should include:
   - **Shear Velocity**: Shear velocity profiles obtained from the inversion.
   - **Misfit Function**: Misfit function values indicating the quality of the inversion fit.
   - **Station**: Identifier for the seismic station.
   - **mis_fit_trsh**: Threshold value for the misfit function.
+
 <p align="center">
   <img src="_Images/Inversion.png" width="500">
 </p>
 
-## `compy.plot_inversion_serpentinization1(Inversion_container)`
+## Interpret inversion results in terms of serpentinization
 
-**Function Overview:**
-The `compy.plot_inversion_serpentinization1` function visualizes the extent of serpentinization at various seismic stations. This function helps in understanding the degree of serpentinization and its impact on shear velocity profiles in the oceanic crust.
+Assumes that all velocity anomalies are caused by serpentinzation
+
+```python
+import compy
+
+compy.plot_inversion_serpentinization1(Inversion_container)
+```
+
+This function visualizes the extent of serpentinization at various seismic stations. This function helps in understanding the degree of serpentinization and its impact on shear velocity profiles in the oceanic crust.
+
+**Parameters**:
 
 - **Inversion_container**: A container that holds the inversion results for different stations. The format should include:
   - **Shear Velocity**: Shear velocity profiles obtained from the inversion.
   - **Misfit Function**: Misfit function values indicating the quality of the inversion fit.
   - **Station**: Identifier for the seismic station.
   - **mis_fit_trsh**: Threshold value for the misfit function.
+
 <p align="center">
   <img src="_Images/Serpentinization.png" width="500">
 </p>
 
 
-
-
 # Plotting Functions
 
-## `fp.coherogram_spectrogram_alpha(rotated_stream)`
+## coherogram_spectrogram
+
+```python
+import ffplot
+
+ffplot.coherogram_spectrogram_alpha(rotated_stream)
+```
 
 This function plots spectrograms that feature average values within the compliance frequency band. The output includes several panels:
+
+**Parameters**:
 
 - **(a) Calibrated Pressure:** Shows pressure data adjusted for calibration errors.
 - **(b) Median Values of Pressure:** Displays the median values of the calibrated pressure data.
@@ -213,43 +310,54 @@ This function plots spectrograms that feature average values within the complian
 - **(f) Average Values:** Illustrates the average values across the dataset. 
 
 Black dashed lines indicate the frequency limits of the compliance band. Green shaded areas in panel (f) highlight selected time windows with coherency exceeding the coherence threshold, marked by a red dashed line set at 0.8. This visualization aids in identifying significant patterns and anomalies in the data.
+
 <p align="center">
   <img src="_Images/RR52_window_selection.png" width="800">
 </p>
 
-## `compy.plot_transfer_function(st, nseg=2**12, TP=5)`
+## Plot transfer functions
 
-**Function Overview:**
-The `compy.plot_transfer_function` function plots the transfer function between different seismic data channels. This helps in visualizing the relationship and coherence between channels, which is crucial for accurate seismic data analysis.
+```python
+import ffplot
+
+ffplot.plot_transfer_function(st, nseg=2**12, TP=5)
+```
+
+This function plots the transfer function between different seismic data channels. This helps in visualizing the relationship and coherence between channels, which is crucial for accurate seismic data analysis.
+
+**Parameters**:
 
 - **st**: The seismic data stream.
 - **nseg**: Number of segments for Fast Fourier Transform (FFT). The default is 2**12.
 - **TP**: Time for tapering the sides of each segment using a Tukey window. The default is 5 minutes.
 
-**Returns:**
 
-- This function generates a plot of the transfer function, aiding in the identification of coherent noise and its removal for enhanced data quality.
+This function generates a plot of the transfer function, aiding in the identification of coherent noise and its removal for enhanced data quality.
+
 <p align="center">
   <img src="_Images/Transferfunction.png" width="800">
 </p>
 
-## `compy.psd_h_all(st, st1, st2, st3, tw=6, nseg=2**11, treshhold_high=1e-14, treshhold_low=1e-17)`
+## Compare PSDs for different data preprocessing stages
 
-**Function Overview:**
-The `compy.psd_h_all` function performs Power Spectral Density (PSD) analysis on seismic data streams to identify and characterize various types of noise and signals across different preprocessing stages. This function helps in evaluating the effectiveness of data preprocessing steps.
+```python
+import ffplot
 
-- **st**: The seismic data stream.
-- **st1**: The seismic data stream after tilt reduction and removal of local and global events.
-- **st2**: The seismic data stream after transient noise elimination.
-- **st3**: The seismic data stream after removing coherent noise using the transfer function method.
+ffplot.psd_h_all(st, st1, st2, st3, tw=6, nseg=2**11, treshhold_high=1e-14, treshhold_low=1e-17)`
+```
+
+This function generates PSD plots for different stages of data preprocessing, illustrating the noise reduction and signal enhancement achieved at each step.
+
+**Parameters**:
+
+- **st** (_obspy.Stream_): The seismic data stream.
+- **st1** (_obspy.Stream_): The seismic data stream after tilt reduction and removal of local and global events.
+- **st2** (_obspy.Stream_): The seismic data stream after transient noise elimination.
+- **st3** (_obspy.Stream_): The seismic data stream after removing coherent noise using the transfer function method.
 - **tw**: Time window length for PSD analysis, in hours. The default is 6 hours.
-- **nseg**: Number of segments for Fast Fourier Transform (FFT). The default is 2**11.
-- **treshhold_high**: Upper threshold for PSD values. The default is 1e-14.
-- **treshhold_low**: Lower threshold for PSD values. The default is 1e-17.
-
-**Returns:**
-
-- This function generates PSD plots for different stages of data preprocessing, illustrating the noise reduction and signal enhancement achieved at each step.
+- **nseg** (_int_): Number of segments for Fast Fourier Transform (FFT). The default is 2**11.
+- **treshhold_high** (_float_): Upper threshold for PSD values. The default is 1e-14.
+- **treshhold_low** (_float_): Lower threshold for PSD values. The default is 1e-17.
 
 
 <p align="center">
