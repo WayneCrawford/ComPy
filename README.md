@@ -376,9 +376,24 @@ We welcome contributions from the community. Please review CONTRIBUTING.md for g
 
 This project is licensed under the GPL-3.0 License. Please see the LICENSE file for more details.
 
-# Citation
+# Citation# Citation
+
 If you use ComPy in your research, please cite:
-	“Shallow Crustal Structures of the Indian Ocean Derived from Compliance Function Analysis”
+
+Aminian, M. A., Crawford, W., Stutzmann, É., Montagner, J.-P., Cannat, M., & Hadziioannou, C. (2025). *Shallow crustal structures of the Indian ocean derived from compliance function analysis*. Geophysical Journal International, 242(3), ggaf253. https://doi.org/10.1093/gji/ggaf253
+
+```bibtex
+@article{aminian2025shallow,
+  author  = {Aminian, Mohammad Amin and Crawford, Wayne and Stutzmann, {\'E}l{\'e}onore and Montagner, Jean-Paul and Cannat, Mathilde and Hadziioannou, C{\'e}line},
+  title   = {Shallow crustal structures of the Indian ocean derived from compliance function analysis},
+  journal = {Geophysical Journal International},
+  year    = {2025},
+  volume  = {242},
+  number  = {3},
+  pages   = {ggaf253},
+  doi     = {10.1093/gji/ggaf253}
+}
+```
 
 # Acknowledgments
 
