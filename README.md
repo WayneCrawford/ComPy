@@ -174,7 +174,8 @@ This function calculates the spectral ratio of seismic data, specifically target
 **Parameters**:
 
 ```python
-def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min=0.02, f_max=0.06,
+def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,
+                             coh_trsh=0.97, mean_trsh = 0.97, f_min=0.02, f_max=0.06,
                              filt_freq1=0.005, filt_freq2=0.1, plot_condition = False):
     '''
     Calculate the pressure gauge gain, using the pressure/acceleration ratio of Rayleigh waves
@@ -195,6 +196,7 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
 
     Returns:
         (float): pressure-acceleration ratio between the data and the theory
+  '''
 ```
 
 <p align="center">
