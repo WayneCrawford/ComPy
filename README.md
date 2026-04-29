@@ -163,7 +163,7 @@ This function rotates seismic data to minimize tilt effects and removes coherenc
 We calibrate the pressure gauge by calculaing the pressure-acceleration spectral ratio in the ambient
 Rayleigh wave band and comparing to the expected value
 
-```
+```python
 import Pressure_calibration as pc
 
 pc.calculate_spectral_ratio(...)
@@ -173,13 +173,29 @@ This function calculates the spectral ratio of seismic data, specifically target
 
 **Parameters**:
 
-- **stream**: The raw seismic data stream before removing instrument response.
-- **mag**: Minimum magnitude of earthquakes to consider for the calculation. The default is 7.
-- **coh_trsh**: Coherence threshold to accept earthquakes. The default is 0.97.
-- **mean_trsh**: Mean threshold to accept earthquakes. The default is 0.97.
-- **f_min**: Low frequency corner of the band of interest. The default is 0.02.
-- **f_max**: High frequency corner of the band of interest. The default is 0.06.
-- **plot_condition**: Boolean flag to plot the condition or not. The default is False.
+```python
+def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min=0.02, f_max=0.06,
+                             filt_freq1=0.005, filt_freq2=0.1, plot_condition = False):
+    '''
+    Calculate the pressure gauge gain, using the pressure/acceleration ratio of Rayleigh waves
+
+    Args:
+        stream (:class:`obspy.core.stream.Stream`): Raw data stream
+        inv (:class:`obspy.core.inventory.Inventory`): Inventory with channel instrument responses
+        zchan (str): channel name for the Z seismometer channel
+        zchan (str): channel name for the pressure sensor channel
+        mag (float): Minimumm magnitude for earthquakes to use in calulation.
+        f_min (float): Low frequency limit of the of band to evaluate.
+        f_max (float): High frequency limit of the of band to evaluate.
+        coh_trsh (float): Only accept earthquakes with this coherence level or higher.
+        mean_trsh (float): Mean Treshhold to accept earthquakes.
+        filt_freq1 (float): Low frequency limit for bandpass pre-filter and plots (must be less than f_min)
+        filt_freq2 (float): High frequency limit for bandpass pre-filter and plots (must be more than f_max)
+        plot_condition (bool): plot the results
+
+    Returns:
+        (float): pressure-acceleration ratio between the data and the theory
+```
 
 <p align="center">
   <img src="_Images/DPGCalibration_Signal.png" width="750">
