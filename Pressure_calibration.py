@@ -17,46 +17,38 @@ from obspy import UTCDateTime, read
 from obspy.clients.fdsn import Client
 import numpy as np
 import obspy
-import tiskit
+import tiskitpy
 from disba import PhaseDispersion
 
-def calculate_spectral_ratio(stream,mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min=0.02, f_max=0.06,plot_condition = False):
+def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min=0.02, f_max=0.06,
+                             filt_freq1=0.005, filt_freq2=0.1, plot_condition = False):
     '''
-    Parameters
-    ----------
-    stream : TYPE
-        Stream Before Removeing instrument response [raw Stream].
-    mag : TYPE, optional
-        Minimumm Magnitude for earthquakes to use in calulation. The default is 7.
-    f_min : TYPE, optional
-        Low frequency cornerof band of intrest . The default is 0.02.
-    f_max : TYPE, optional
-        High frequency cornerof band of intrest. The default is 0.06.
+    Calculate the pressure gauge gain, using the pressure/acceleration ratio of Rayleigh waves
 
-    coh_trsh = Coherence Treshhold to accept eqrthquakes. The default is 0.97.
-    
-    mean_trsh = Mean Treshhold to accept eqrthquakes. The default is 0.97.
+    Args:
+        stream (:class:`obspy.core.stream.Stream`): Raw data stream
+        inv (:class:`obspy.core.inventory.Inventory`): Inventory with channel instrument responses
+        zchan (str): channel name for the Z seismometer channel
+        zchan (str): channel name for the pressure sensor channel
+        mag (float): Minimumm magnitude for earthquakes to use in calulation.
+        f_min (float): Low frequency limit of the of band to evaluate.
+        f_max (float): High frequency limit of the of band to evaluate.
+        coh_trsh (float): Only accept earthquakes with this coherence level or higher.
+        mean_trsh (float): Mean Treshhold to accept earthquakes.
+        filt_freq1 (float): Low frequency limit for bandpass pre-filter and plots (must be less than f_min)
+        filt_freq2 (float): High frequency limit for bandpass pre-filter and plots (must be more than f_max)
+        plot_condition (bool): plot the results
 
-    Returns
-    -------
-    ratio : TYPE
-
-    Calibration Ratio
-
+    Returns:
+        (float): pressure-acceleration ratio between the data and the theory
     '''
-    # Frequncy to filter the data
-    freq1=0.005 
-    freq2=0.1
-    
-    # rho = Density of water 
-    rho=1028
-    
-    #nseg = number of segment for coherence and transfer function calculation,overlap is 90%
-    nseg = 2**9
-    
-    #TP = Tapering paramer 5 minuntes
-    TP = 5 
-    client = Client("RESIF")
+    assert filt_freq1 < f_min
+    assert filt_freq2 > f_max
+     
+    # HARD-WIRED PARAMETERS
+    rho=1028     # Water density (kg/m^3)
+    nseg = 2**9 # Number of segments for coherence and transfer function calculation (overlap is 90%)
+    TP = 5      # Tapering parameter in minutes
 
     stream2 = stream.copy()
     stream2.clear()
@@ -66,26 +58,14 @@ def calculate_spectral_ratio(stream,mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min
     net = stream[0].stats.network
     sta = stream[0].stats.station
     
-    invz = client.get_stations(
-        network=net,
-        station=sta,
-        channel="BHZ",
-        location="*",
-        level="response")
-    
-    invp = client.get_stations(
-        network=net,
-        station=sta,
-        channel="BDH",
-        location="*",
-        level="response")
+    invz = inv.select(network=net, station=sta, channel=zchan)
+    invp = inv.select(network=net, station=sta, channel=pchan)
     
     print ("Downloading Earthquakes with magnitude greater than " + str(mag) +" Mw \n ...."  )
     
-    eq_spans = tiskit.TimeSpans.from_eqs(stream.select(channel='*Z')[0].stats.starttime,
-                                     stream.select(
-                                         channel='*Z')[0].stats.endtime,
-                                     minmag=mag, days_per_magnitude=0.5)
+    eq_spans = tiskitpy.TimeSpans.from_eqs(stream.select(channel=zchan)[0].stats.starttime,
+                                           stream.select(channel=zchan)[0].stats.endtime,
+                                           minmag=mag, days_per_magnitude=0.5)
     
     print ( str(len(eq_spans)) +" Earthquakes with magnitude greater than " + str(mag) +" Mw has been found"  )
 
@@ -101,20 +81,20 @@ def calculate_spectral_ratio(stream,mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min
 
     print ("Removing the instrument response ...."  )
 
-    stream2.select(channel="*Z").remove_response(inventory=invz,
-                                            output="ACC", plot=False)
+    stream2.select(channel=zchan).remove_response(inventory=invz,
+                                                  output="ACC", plot=False)
 
-    stream2.select(channel="*H").remove_response(inventory=invp,
-                                            output="DEF", plot=False)
+    stream2.select(channel=pchan).remove_response(inventory=invp,
+                                                  output="DEF", plot=False)
     
-    stream22.select(channel="*Z").remove_response(inventory=invz,
-                                            output="ACC", plot=False)
+    stream22.select(channel=zchan).remove_response(inventory=invz,
+                                                   output="ACC", plot=False)
 
-    stream22.select(channel="*H").remove_response(inventory=invp,
-                                            output="DEF", plot=False)
+    stream22.select(channel=pchan).remove_response(inventory=invp,
+                                                   output="DEF", plot=False)
     
-    stream22.filter("lowpass", freq=freq1)
-    stream22.filter("highpass", freq=freq2)
+    stream22.filter("lowpass", freq=filt_freq1)
+    stream22.filter("highpass", freq=filt_freq2)
 
     stream22.sort(['starttime','channel'])
 
@@ -139,7 +119,7 @@ def calculate_spectral_ratio(stream,mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min
     Gpp = np.zeros([len(eq_spans),int(nseg/2 + 1)])
     Gzz = np.zeros([len(eq_spans),int(nseg/2 + 1)])
 
-    # freqs = np.fft.fftfreq(len(stream2.select(channel="*Z")[2].data),d=stream2.select(channel="*Z")[2].stats.sampling_rate)
+    # freqs = np.fft.fftfreq(len(stream2.select(channel=zchan)[2].data),d=stream2.select(channel=zchan)[2].stats.sampling_rate)
     
     # Calculation of spectral ratio (Transfer Function) and coherence with wlech method 
     
@@ -148,21 +128,21 @@ def calculate_spectral_ratio(stream,mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min
         
         # You should find a solution for this line [ if statement!!], its a mess maybe add nfft to the caclulation ...!!?
         # or add zeros to the matrix !!!????
-        if len(stream2.select(component='Z')[i].data) == 2501:
-            f,Czp[i] = scipy.signal.coherence(stream2.select(component='Z')[i].data,
-                                         stream2.select(component='H')[i].data,
+        if len(stream2.select(channel=zchan)[i].data) == 2501:
+            f,Czp[i] = scipy.signal.coherence(stream2.select(channel=zchan)[i].data,
+                                         stream2.select(channel=pchan)[i].data,
                                          fs=stream2[i].stats.sampling_rate,
                                          nperseg =nseg,noverlap=(nseg*0.5),
                                          window=scipy.signal.windows.tukey(nseg,
                                          (TP*60*stream2[i].stats.sampling_rate)/nseg))
 
-            f,Gzz[i] = scipy.signal.welch(stream2.select(component='Z')[i].data,
+            f,Gzz[i] = scipy.signal.welch(stream2.select(channel=zchan)[i].data,
                                      fs=stream2[i].stats.sampling_rate,
                                      nperseg =nseg,noverlap=(nseg*0.5),
                                      window=scipy.signal.windows.tukey(nseg,
                                      (TP*60*stream2[i].stats.sampling_rate)/nseg))
     
-            f,Gpp[i] = scipy.signal.welch(stream2.select(component='H')[i].data,
+            f,Gpp[i] = scipy.signal.welch(stream2.select(channel=pchan)[i].data,
                                      fs=stream2[i].stats.sampling_rate,
                                      nperseg =nseg,noverlap=(nseg*0.5),
                                      window=scipy.signal.windows.tukey(nseg,
@@ -197,13 +177,11 @@ def calculate_spectral_ratio(stream,mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min
         
                 # Plot 2: Acceleration
                 plt.subplot(511)
-                plt.title(stream22.select(channel="*Z")[i].stats.network+"."+stream22.select(channel="*Z")[i].stats.station+"  "+
-                          str(stream22.select(channel="*Z")[i].stats.starttime)[0:19])    
-                plt.plot(stream22.select(channel="*Z")[i].times(), stream22.select(channel="*Z")[i].data,linewidth=3,color='blue')
-                plt.vlines(t1[i], np.min(stream22.select(channel="*Z")[i].data),
-                           np.max(stream22.select(channel="*Z")[i].data),color='r',linewidth=3,linestyles='dashed')
-                plt.vlines(t2[i], np.min(stream22.select(channel="*Z")[i].data),
-                           np.max(stream22.select(channel="*Z")[i].data),color='r',linewidth=3,linestyles='dashed')
+                ztrace22 = stream22.select(channel=zchan)[i]
+                plt.title(ztrace22.stats.network+"." + ztrace22.stats.station + "  " + str(ztrace22.stats.starttime)[0:19])    
+                plt.plot(ztrace22.times(), ztrace22.data, lw=3, color='blue')
+                plt.vlines(t1[i], np.min(ztrace22.data), np.max(ztrace22.data),color='r', lw=3, ls='dashed')
+                plt.vlines(t2[i], np.min(ztrace22.data), np.max(ztrace22.data),color='r', lw=3, ls='dashed')
                 
                 plt.xlabel('Time (s)')
                 plt.ylabel('Vertical Acc[m/s^2]')
@@ -212,11 +190,10 @@ def calculate_spectral_ratio(stream,mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min
                 
                 # Plot 2: Pressure
                 plt.subplot(512)
-                plt.plot(stream22.select(channel="*H")[i].times(), stream22.select(channel="*H")[i].data,linewidth=3,color='blue')
-                plt.vlines(t1[i], np.min(stream22.select(channel="*H")[i].data), 
-                           np.max(stream22.select(channel="*H")[i].data),color='r',linewidth=3,linestyles='dashed')
-                plt.vlines(t2[i], np.min(stream22.select(channel="*H")[i].data), 
-                           np.max(stream22.select(channel="*H")[i].data),color='r',linewidth=3,linestyles='dashed')
+                htrace22 = stream22.select(channel=pchan)[i]
+                plt.plot(htrace22.times(), htrace22.data, lw=3, color='blue')
+                plt.vlines(t1[i], np.min(htrace22.data), np.max(htrace22.data), color='r', lw=3, ls='dashed')
+                plt.vlines(t2[i], np.min(htrace22.data), np.max(htrace22.data), color='r', lw=3, ls='dashed')
                 
                 plt.xlabel('Time (s)')
                 plt.ylabel('Pressure [pa] ')
@@ -226,13 +203,13 @@ def calculate_spectral_ratio(stream,mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min
                 
             
                 plt.subplot(513)
-                plt.plot(stream2.select(channel="*H")[i].times(),-stream2.select(channel="*H")[i].data/np.max(stream2.select(channel="*H")[i].data)
-                         ,label='Vertical Acc',color='blue')
-                plt.plot(stream2.select(channel="*Z")[i].times(),stream2.select(channel="*Z")[i].data/np.max(stream2.select(channel="*Z")[i].data)
-                         ,label='pressure',color='r',linestyle='dashed')
+                htrace2 = stream2.select(channel=pchan)[i]
+                ztrace2 = stream2.select(channel=zchan)[i]
+                plt.plot(htrace2.times(), -htrace2.data/np.max(htrace2.data),label='Vertical Acc', color='blue')
+                plt.plot(ztrace2.times(), ztrace2.data/np.max(ztrace2.data), label='pressure', color='r', ls='dashed')
                 # plt.xlim([9.7*10e4,9.8*10e4])
                 plt.xlabel('Time[s]')
-                plt.ylabel('Normilized')
+                plt.ylabel('Normalized')
                 plt.legend(loc='upper right')
                 plt.text(0.01, 0.8, 'c)', transform=plt.gca().transAxes, fontsize=25, fontweight='bold')
                 
@@ -246,7 +223,7 @@ def calculate_spectral_ratio(stream,mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min
                 plt.xlabel("Frequency [Hz] ")
                 plt.grid(True)
                 plt.ylim([0,1])
-                plt.xlim([freq1,freq2])
+                plt.xlim([filt_freq1,filt_freq2])
                 plt.grid(True)
                 plt.text(0.01, 0.8, 'd)', transform=plt.gca().transAxes, fontsize=25, fontweight='bold')
                 plt.legend(loc='upper right')
@@ -263,7 +240,7 @@ def calculate_spectral_ratio(stream,mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min
                 plt.vlines(x = f_min, ymin=-10e10, ymax=10e10,color='r',linestyles="dashed",label="Frequency limits")
                 plt.vlines(x = f_max, ymin=-10e10, ymax=10e10,color='r',linestyles="dashed")
                 
-                plt.xlim([freq1,freq2])
+                plt.xlim([filt_freq1,filt_freq2])
                 plt.ylim([-10e6,10e7])
                 plt.legend(loc='upper right')
                 plt.xlabel('Frequency (Hz)')
@@ -274,7 +251,7 @@ def calculate_spectral_ratio(stream,mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min
                 
                 plt.tight_layout()
                 plt.show()
-                # plt.savefig( str(stream22.select(channel="*Z")[i].stats.starttime)[0:19] + '.png',dpi=300)
+                # plt.savefig( str(ztrace22.stats.starttime)[0:19] + '.png',dpi=300)
                 # plt.clf()
     
     # Calculate the spectral ratio
@@ -311,7 +288,7 @@ def calculate_spectral_ratio(stream,mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min
     plt.vlines(x = f_max, ymin=0, ymax=1,color='r',linestyles='dashed',linewidth=3)
     plt.ylabel("Coherence ")
     # plt.xlabel("Frequency [Hz] ")
-    plt.xlim([freq1,freq2])
+    plt.xlim([filt_freq1,filt_freq2])
     plt.grid(True)
     plt.legend(loc='lower left')
     # plt.text(0.02, 0.9, 'a)', transform=plt.gca().transAxes, fontsize=40, fontweight='bold')
@@ -335,7 +312,7 @@ def calculate_spectral_ratio(stream,mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min
     plt.vlines(x = f_min, ymin=-1, ymax=10,color='r',linestyles='dashed',label="Frequency limits ",linewidth=3)
     plt.vlines(x = f_max, ymin=-1, ymax=10,color='r',linestyles='dashed',linewidth=3)
     
-    plt.xlim([freq1,freq2])
+    plt.xlim([filt_freq1,filt_freq2])
     plt.ylim([-1,10])
     plt.grid(True)
     plt.xlabel('Frequency [Hz]')
@@ -352,7 +329,8 @@ def calculate_spectral_ratio(stream,mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min
     # plt.savefig(file_path_save + f"Calibration.pdf")
 
     return(gain_factor)
-#%%
+
+
 def rayleigh_arrival(stream,window = 20 , timelag = - 2,plot_condition = False):
     
     max_index = np.argmax(stream.select(channel="*Z")[0].data)  # Find the maximum value in the trace
