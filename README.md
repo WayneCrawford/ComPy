@@ -164,9 +164,9 @@ We calibrate the pressure gauge by calculaing the pressure-acceleration spectral
 Rayleigh wave band and comparing to the expected value
 
 ```
-import python
+import Pressure_calibration as pc
 
-compy.calculate_spectral_ratio(...)
+pc.calculate_spectral_ratio(...)
 ```
 
 This function calculates the spectral ratio of seismic data, specifically targeting high-magnitude earthquake events. This function helps in refining the calibration of seismic data.
