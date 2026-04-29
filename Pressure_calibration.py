@@ -5,7 +5,7 @@ Created on Thu Jun  1 16:33:13 2023
 
 @author: Mohammad-Amin Aminian
 
-DFG Calibration
+DPG Calibration
 
 """
 from obspy.signal.trigger import plot_trigger
@@ -18,7 +18,8 @@ import obspy
 import tiskitpy
 from disba import PhaseDispersion
 
-def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min=0.02, f_max=0.06,
+def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag=7,
+                             coh_trsh=0.97,mean_trsh = 0.97,f_min=0.02, f_max=0.06,
                              filt_freq1=0.005, filt_freq2=0.1, plot_condition=True):
     '''
     Calculate the pressure gauge gain, using the pressure/acceleration ratio of Rayleigh waves
@@ -81,13 +82,10 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
 
     stream2.select(channel=zchan).remove_response(inventory=invz,
                                                   output="ACC", plot=False)
-
     stream2.select(channel=pchan).remove_response(inventory=invp,
                                                   output="DEF", plot=False)
-    
     stream22.select(channel=zchan).remove_response(inventory=invz,
                                                    output="ACC", plot=False)
-
     stream22.select(channel=pchan).remove_response(inventory=invp,
                                                    output="DEF", plot=False)
     
@@ -99,7 +97,10 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
     print(" Estimating rayleigh wave arrival time ....")
     
     for i in range(0,int(len(stream22)/4)):
-        sst,t1[i],t2[i] = _rayleigh_arrival(stream22[i*4:(i+1)*4],timelag=-5,window=20,plot_condition=False)
+        sst,t1[i],t2[i] = _rayleigh_arrival(stream22[i*4:(i+1)*4],
+                                            zchan,
+                                            timelag=-5, window=20,
+                                            plot_condition=False)
         stream2 = sst + stream2
     stream2.sort(['starttime','channel'])
     
@@ -117,7 +118,8 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
     Gpp = np.zeros([len(eq_spans),int(nseg/2 + 1)])
     Gzz = np.zeros([len(eq_spans),int(nseg/2 + 1)])
 
-    # freqs = np.fft.fftfreq(len(stream2.select(channel=zchan)[2].data),d=stream2.select(channel=zchan)[2].stats.sampling_rate)
+    # freqs = np.fft.fftfreq(len(stream2.select(channel=zchan)[2].data),
+    #                        d=stream2.select(channel=zchan)[2].stats.sampling_rate)
     
     # Calculation of spectral ratio (Transfer Function) and coherence with wlech method 
     
@@ -128,23 +130,23 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
         # or add zeros to the matrix !!!????
         if len(stream2.select(channel=zchan)[i].data) == 2501:
             f,Czp[i] = scipy.signal.coherence(stream2.select(channel=zchan)[i].data,
-                                         stream2.select(channel=pchan)[i].data,
-                                         fs=stream2[i].stats.sampling_rate,
-                                         nperseg =nseg,noverlap=(nseg*0.5),
-                                         window=scipy.signal.windows.tukey(nseg,
-                                         (TP*60*stream2[i].stats.sampling_rate)/nseg))
+                                              stream2.select(channel=pchan)[i].data,
+                                              fs=stream2[i].stats.sampling_rate,
+                                              nperseg =nseg,noverlap=(nseg*0.5),
+                                              window=scipy.signal.windows.tukey(nseg,
+                                              (TP*60*stream2[i].stats.sampling_rate)/nseg))
 
             f,Gzz[i] = scipy.signal.welch(stream2.select(channel=zchan)[i].data,
-                                     fs=stream2[i].stats.sampling_rate,
-                                     nperseg =nseg,noverlap=(nseg*0.5),
-                                     window=scipy.signal.windows.tukey(nseg,
-                                     (TP*60*stream2[i].stats.sampling_rate)/nseg))
+                                          fs=stream2[i].stats.sampling_rate,
+                                          nperseg =nseg,noverlap=(nseg*0.5),
+                                          window=scipy.signal.windows.tukey(nseg,
+                                          (TP*60*stream2[i].stats.sampling_rate)/nseg))
     
             f,Gpp[i] = scipy.signal.welch(stream2.select(channel=pchan)[i].data,
-                                     fs=stream2[i].stats.sampling_rate,
-                                     nperseg =nseg,noverlap=(nseg*0.5),
-                                     window=scipy.signal.windows.tukey(nseg,
-                                     (TP*60*stream2[i].stats.sampling_rate)/nseg))
+                                          fs=stream2[i].stats.sampling_rate,
+                                          nperseg =nseg,noverlap=(nseg*0.5),
+                                          window=scipy.signal.windows.tukey(nseg,
+                                          (TP*60*stream2[i].stats.sampling_rate)/nseg))
                         
             ratio_psd[i] = Gpp[i] / Gzz[i]
 
@@ -198,8 +200,7 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
                 # plt.title('Stream2')
                 plt.grid(True)
                 plt.text(0.01, 0.8, 'b)', transform=plt.gca().transAxes, fontsize=25, fontweight='bold')
-                
-            
+
                 plt.subplot(513)
                 htrace2 = stream2.select(channel=pchan)[i]
                 ztrace2 = stream2.select(channel=zchan)[i]
@@ -210,13 +211,13 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
                 plt.ylabel('Normalized')
                 plt.legend(loc='upper right')
                 plt.text(0.01, 0.8, 'c)', transform=plt.gca().transAxes, fontsize=25, fontweight='bold')
-                
+
                 #    Plot 3: Coherence
                 plt.subplot(514)
                 plt.semilogx(f,Czp[i],linewidth=3,color='blue')
                 plt.vlines(x = f_min, ymin=0, ymax=1,color='r',linestyles="dashed",label="Frequency limits")
                 plt.vlines(x = f_max, ymin=0, ymax=1,color='r',linestyles="dashed")
-                
+
                 plt.ylabel("Coherence ")
                 plt.xlabel("Frequency [Hz] ")
                 plt.grid(True)
@@ -225,7 +226,7 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
                 plt.grid(True)
                 plt.text(0.01, 0.8, 'd)', transform=plt.gca().transAxes, fontsize=25, fontweight='bold')
                 plt.legend(loc='upper right')
-                
+
                 #    Calculate spectral ratio
                 
                 # Plot 4: Spectral Ratio/Frequency
@@ -237,7 +238,7 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
                 plt.semilogx(f, np.sqrt(ratio_psd[i]),linewidth=3,color='blue',label="Measured")
                 plt.vlines(x = f_min, ymin=-10e10, ymax=10e10,color='r',linestyles="dashed",label="Frequency limits")
                 plt.vlines(x = f_max, ymin=-10e10, ymax=10e10,color='r',linestyles="dashed")
-                
+
                 plt.xlim([filt_freq1,filt_freq2])
                 plt.ylim([-10e6,10e7])
                 plt.legend(loc='upper right')
@@ -246,15 +247,14 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
                 plt.title('Spectral Ratio ')
                 plt.grid(True)
                 plt.text(0.01, 0.8, 'e)', transform=plt.gca().transAxes, fontsize=25, fontweight='bold')
-                
+
                 plt.tight_layout()
                 plt.show()
                 # plt.savefig( str(ztrace22.stats.starttime)[0:19] + '.png',dpi=300)
                 # plt.clf()
-    
+  
     # Calculate the spectral ratio
     Data = np.median(np.sqrt(High_ratio_psd)/(-invz[0][0][0].elevation*rho),axis=0)
-    
     Data_zero = np.where((f >= f_min) & (f <= f_max), Data, 0)
     
     pvel = calculate_speed_of_sound_in_water(depth= - invz[0][0].elevation)
@@ -332,32 +332,31 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
     return(gain_factor)
 
 
-def _rayleigh_arrival(stream,window = 20 , timelag = - 2,plot_condition = False):
-    
-    max_index = np.argmax(stream.select(channel="*Z")[0].data)  # Find the maximum value in the trace
-    
-    fs = stream.select(channel="*Z")[0].stats.sampling_rate
+def _rayleigh_arrival(stream, zchan, window = 20 , timelag = - 2,plot_condition = False):
+    ztrace = stream.select(channel=zchan)[0]
+    max_index = np.argmax(ztrace.data)  # Find the maximum value in the trace
+
+    fs = ztrace.stats.sampling_rate
     
     max_time = max_index / fs  # Calculate the time of the maximum value
     
-    ray_arr = stream.select(channel="*Z")[0].stats.starttime + max_time + (timelag*60)
-    end_time = stream.select(channel="*Z")[0].stats.starttime + max_time + ((timelag+window)*60)
+    ray_arr = ztrace.stats.starttime + max_time + (timelag*60)
+    end_time = ztrace.stats.starttime + max_time + ((timelag+window)*60)
 
     print(f"Fundamental Rayleigh arrival at {ray_arr} seconds.")
     
     st = stream.copy()
-    
     st.trim(starttime=ray_arr,endtime = end_time)
-    
+
     if plot_condition:
         plt.figure(dpi=300,figsize=(12,6))
         plt.subplot(211)
-        plt.plot(stream.select(channel="*Z")[0].data)
-        plt.vlines(max_index + (timelag*60)*fs, np.min(stream.select(channel="*Z")[0].data), np.max(stream.select(channel="*Z")[0].data),color='r')
-        plt.vlines(max_index + ((timelag+window)*60*fs), np.min(stream.select(channel="*Z")[0].data), np.max(stream.select(channel="*Z")[0].data),color='r')
-    
+        plt.plot(ztrace.data)
+        plt.vlines(max_index + (timelag*60)*fs, np.min(ztrace.data), np.max(ztrace.data),color='r')
+        plt.vlines(max_index + ((timelag+window)*60*fs), np.min(ztrace.data), np.max(ztrace.data),color='r')
+  
         plt.subplot(212)
-        plt.plot(st.select(channel="*Z")[0].data)
+        plt.plot(ztrace.data)
 
     return(st,(max_time + (timelag*60)),(max_time + ((timelag+window)*60)))
 
@@ -724,18 +723,14 @@ def pressure_calibration(stream,mag=7,i=1):
         location="*",
         level="response")
     eq_spans = tiskit.TimeSpans.from_eqs(stream.select(channel='*Z')[0].stats.starttime,
-                                     stream.select(
-                                         channel='*Z')[0].stats.endtime,
-                                     minmag=mag, days_per_magnitude=0.5)
+                                         stream.select(channel='*Z')[0].stats.endtime,
+                                         minmag=mag, days_per_magnitude=0.5)
     
     stream.trim(eq_spans.start_times[i-1],eq_spans.start_times[i-1]+10*3600)
-    
     stream.select(channel="*Z").remove_response(inventory=invz,
-                                            output="ACC", plot=False)
-
+                                                output="ACC", plot=False)
     stream.select(channel="*H").remove_response(inventory=invp,
-                                            output="DEF", plot=False)
-
+                                                output="DEF", plot=False)
 
     df = stream[0].stats.sampling_rate
 
@@ -813,9 +808,8 @@ def p_calibration(stream,gain_factor,rho=1025,mag=6):
     stream.sort()
     
     eq_spans = tiskit.TimeSpans.from_eqs(stream.select(channel='*Z')[0].stats.starttime,
-                                     stream.select(
-                                         channel='*Z')[0].stats.endtime,
-                                     minmag=mag, days_per_magnitude=0.5)
+                                         stream.select(channel='*Z')[0].stats.endtime,
+                                         minmag=mag, days_per_magnitude=0.5)
     
     print ( str(len(eq_spans)) +" Earthquakes with magnitude greater than " + str(mag) +" Mw has been found"  )
 
