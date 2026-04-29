@@ -9,8 +9,6 @@ DFG Calibration
 
 """
 from obspy.signal.trigger import plot_trigger
-# from obspy.signal.trigger import coincidence_trigger
-# from obspy.signal.trigger import classic_sta_lta
 import matplotlib.pyplot as plt
 import scipy
 from obspy import UTCDateTime, read
@@ -101,7 +99,7 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
     print(" Estimating rayleigh wave arrival time ....")
     
     for i in range(0,int(len(stream22)/4)):
-        sst,t1[i],t2[i] = rayleigh_arrival(stream22[i*4:(i+1)*4],timelag=-5,window=20,plot_condition=False)
+        sst,t1[i],t2[i] = _rayleigh_arrival(stream22[i*4:(i+1)*4],timelag=-5,window=20,plot_condition=False)
         stream2 = sst + stream2
     stream2.sort(['starttime','channel'])
     
@@ -261,13 +259,16 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
     
     pvel = calculate_speed_of_sound_in_water(depth= - invz[0][0].elevation)
     
-    f_dispersion_curve, Model = theoretical_p_a_ratio(alpha=pvel,h=-invz[0][0][0].elevation,t=np.sort(1/f[::-1][0:256]),plot_condition=False)
+    f_dispersion_curve, Model = _theoretical_p_a_ratio(alpha=pvel,
+                                                       h=-invz[0][0][0].elevation,
+                                                       t=np.sort(1/f[::-1][0:256]),
+                                                       plot_condition=False)
     
-    # f_dispersion_curve, Model = phase_dispersion(t=np.sort(1/f[::-1][0:512]))
+    # f_dispersion_curve, Model = _phase_dispersion(t=np.sort(1/f[::-1][0:512]))
     
     Model_zero = np.where((f_dispersion_curve >= f_min) & (f_dispersion_curve <= f_max), Model, 0)
 
-    gain_factor = grid_search(Data_zero[1:257],Model_zero[::-1])
+    gain_factor = _grid_search(Data_zero[1:257],Model_zero[::-1])
     
     # plt.rcParams.update({'font.size': 35})
     import compy
@@ -331,7 +332,7 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
     return(gain_factor)
 
 
-def rayleigh_arrival(stream,window = 20 , timelag = - 2,plot_condition = False):
+def _rayleigh_arrival(stream,window = 20 , timelag = - 2,plot_condition = False):
     
     max_index = np.argmax(stream.select(channel="*Z")[0].data)  # Find the maximum value in the trace
     
@@ -359,33 +360,10 @@ def rayleigh_arrival(stream,window = 20 , timelag = - 2,plot_condition = False):
         plt.plot(st.select(channel="*Z")[0].data)
 
     return(st,(max_time + (timelag*60)),(max_time + ((timelag+window)*60)))
-#%%
-def misfit(d,m,l=2,s=1):
-    '''
-        
-    Calculate misfit (L2)
 
-    Parameters
-    ----------
-    d : Measured Data
-    
-    m : Modeled Data
-    
-    l : power of the norm, default = 2.
-       
-    s : Estimated uncertainty
-        The default is 1.    
-    Returns
-    -------
-    misfit
-    '''
-    # misfit = np.sum(((d-m)/s)**l)
-    misfit = np.sum(((d-m)**l)/(s**2))
 
-    return(misfit)
-#%%
 # it can be better by writing the code for step size, you did before somewhere!!!
-def grid_search(d,m):
+def _grid_search(d,m):
     lower_limit = 0
     upper_limit = 500
     sensitivity = 0.01
@@ -398,7 +376,7 @@ def grid_search(d,m):
         multi_factor = i*sensitivity
         # print(multi_factor)
         grided_d[i] = multi_factor * d
-        misfit_value[i] = misfit(grided_d[i],m,l=2,s=1)
+        misfit_value[i] = _misfit(grided_d[i],m,l=2,s=1)
 
     minimum_index = np.argmin(misfit_value)
     
@@ -407,28 +385,24 @@ def grid_search(d,m):
     print("Gain factor is " + str(1/gain_factor))
     
     return(1/gain_factor)
-#%%
-def theoretical_p_a_ratio(alpha = 1500, rho = 1028,h = 4760,plot_condition=True,t = None,velocity_model = None):
+
+
+def _theoretical_p_a_ratio(alpha = 1500, rho = 1028,h = 4760,plot_condition=True,t = None,velocity_model = None):
     '''
     Carefull it is not angular frequency !!! does it matter???
 
-    Parameters
-    ----------
-    alpha : TYPE, optional
-        DESCRIPTION. The default is 1500.
-    rho : TYPE, optional
-        DESCRIPTION. The default is 1028.
-    h : TYPE, optional
-        DESCRIPTION. The default is 4760.
-    plot_condition : TYPE, optional
-        DESCRIPTION. The default is True.
+    Args:
+      alpha (float): acoustic sound velocity in the ocean.
+      rho (float): Average Seawater density.
+      h (float): Water depth (meters)
+      plot_condition (bool): plot the results
 
-    Returns
-    -------
-    None.
-
+    Returns:
+      (tuple):
+        f_dispersion_curve (???): ???
+        p_a_ratio/(rho*h) (???): ???
     '''
-    f_dispersion_curve , fun_phase_vel = phase_dispersion(t=t)
+    f_dispersion_curve , fun_phase_vel = _phase_dispersion(t=t)
     
     r = 2*np.pi * f_dispersion_curve * np.sqrt(alpha**-2 - (fun_phase_vel*1000)**-2)
         
@@ -448,13 +422,39 @@ def theoretical_p_a_ratio(alpha = 1500, rho = 1028,h = 4760,plot_condition=True,
         plt.tight_layout()
         plt.show()
         
-    return(f_dispersion_curve,p_a_ratio/(rho*h))
+    return(f_dispersion_curve, p_a_ratio/(rho*h))
 
-#%%
-def phase_dispersion(velocity_model = None,plot_condition=True ,t = None):
-    # Velocity model
-    # thickness, Vp, Vs, density
-    # km, km/s, km/s, g/cm3
+
+def _misfit(d,m,l=2,s=1):
+    '''  
+    Calculate misfit (L2)
+
+    Parameters
+    ----------
+    d : Measured Data
+    
+    m : Modeled Data
+    
+    l : power of the norm, default = 2.
+       
+    s : Estimated uncertainty
+        The default is 1.    
+    Returns
+    -------
+    misfit
+    '''
+
+    return(np.sum(((d-m)**l)/(s**2)))
+
+
+def _phase_dispersion(velocity_model = None, plot_condition=True ,t = None):
+    """
+    Phase dispersion calculation
+
+    Args:
+      Velocity model (???): ???
+        thickness (km), Vp (km/s), Vs (km/s), density (g/cm^3)
+    """
     if velocity_model is None:
        velocity_model = np.array([
            [0.26, 1.75, 0.34, 1.84],
@@ -593,16 +593,18 @@ def phase_dispersion(velocity_model = None,plot_condition=True ,t = None):
         
     return(1/cpr[0][0],cpr[0][1])
  
-#%%
+
 def cut_signal_above_zero(signal):
     """
     Cuts a signal from where it has a value above zero and removes trailing zeros.
 
-    Parameters:
-    - signal (list): A list of values representing the signal.
+    NOT USED???
+    
+    Args:
+      signal (list): A list of values representing the signal.
 
     Returns:
-    - cut_signal (list): The cut signal without trailing zeros.
+      cut_signal (list): The cut signal without trailing zeros.
     """
     start_index = 0
 
@@ -622,10 +624,20 @@ def cut_signal_above_zero(signal):
 
     cut_signal = cut_signal[:end_index]
     return cut_signal
-#%%
-def calculate_speed_of_sound_in_water(temperature=4, salinity=35, depth=4760):
 
-    """Calculate the speed of sound in water using Mackenzie's formula."""
+
+def calculate_speed_of_sound_in_water(temperature=4, salinity=35, depth=4760):
+    """
+    Calculate the speed of sound in water using Mackenzie's formula.
+
+    Args:
+      temperature (float): water temperature (degrees Celsius)
+      salinity (float): salinity in parts per thousand
+      depth (float): Desired depth (m)
+
+    Returns:
+      (float): speed of sound in water (m/s)
+    """
     # Constants
     a1 = 1448.96
     a2 = 4.591
@@ -648,10 +660,23 @@ def calculate_speed_of_sound_in_water(temperature=4, salinity=35, depth=4760):
     )
     return speed_of_sound
 
-#%%
 from math import sin, cos, sqrt, atan2, radians
 
 def calculate_distance(lat1, lon1, lat2, lon2):
+    """
+    Calculate the distance between two points on the Earth
+
+    NOT USED???
+    
+    Args:
+      lat1 (float): latitude of the first point (decimal degrees "north")
+      lon1 (float): longitude of the first point (decimal degrees "east")
+      lat2 (float): latitude of the second point (decimal degrees "north")
+      lon2 (float): longitude of the second point (decimal degrees "east")
+
+    Returns:
+      (float): distance between the two points (km)
+    """
     # Convert coordinates to radians
     lat1_rad = radians(lat1)
     lon1_rad = radians(lon1)
@@ -675,15 +700,15 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 
 #%%
 # Calibrating via P-wave Arrival
-client = Client("RESIF")
-# start =UTCDateTime("2012-10-12")
-net = "YV"
-sta = "RR38"
+# client = Client("RESIF")
+# net = "YV"
+# sta = "RR38"
 
 def pressure_calibration(stream,mag=7,i=1):
     '''
     Pressure gauge calibration using p wave arrival
-    
+
+    UNUSED?  Unusable in its' current state that depends on the client/net/sta specified just above
     '''
     invz = client.get_stations(
         network=stream[0].stats.network,
@@ -733,9 +758,12 @@ def pressure_calibration(stream,mag=7,i=1):
     plt.plot(stream[3].data / -Acc),plt.plot(stream[3].data)
     
     scipy.stats.pearsonr(stream[0].data,stream[3].data)
-#%%
+
+
 def p_calibration(stream,gain_factor,rho=1025,mag=6):
-    
+    """
+    UNUSED?  Unusable in its current state that depends on the client/net/sta specified just above
+    """
     nseg=2**11
     TP=5
     
@@ -876,13 +904,14 @@ def p_calibration(stream,gain_factor,rho=1025,mag=6):
 
     plt.legend(loc="upper left")
 
-#%%
-import matplotlib as mpl
-import scipy.signal
+# import matplotlib as mpl
+# import scipy.signal
 
 def plot_spectrogram(raw_stream):
     """
     Plots the spectrogram of a raw stream and highlights specific frequency bands.
+
+    UNUSED?
     
     Parameters:
     - raw_stream: The raw data stream containing seismic or other time series data.
@@ -1024,13 +1053,13 @@ def plot_spectrogram(raw_stream):
 
     plt.legend(loc="upper left")
     plt.tight_layout()
-    
-    
 
-#%%
-def sliding_window(a, ws, ss=None, hann=True):
+
+def _sliding_window(a, ws, ss=None, hann=True):
     """
     Function to split a data array into overlapping, possibly tapered sub-windows
+
+    USED BY coherogram_spectrogram_alpha(), itself unused
 
     Parameters
     ----------
@@ -1077,9 +1106,10 @@ def sliding_window(a, ws, ss=None, hann=True):
             out[i] = a[start: stop]
 
     return out, nd
-#%%
+
+
 def coherogram_spectrogram_alpha(st,nseg=2**12,tw =1,f_min = 0.005,f_max = 0.02):
-    
+    """UNUSED?"""
     Tresh_coh = 0.8
     Tresh_Dz = -170
     Tresh_Dp = -70
@@ -1097,8 +1127,8 @@ def coherogram_spectrogram_alpha(st,nseg=2**12,tw =1,f_min = 0.005,f_max = 0.02)
     
 
     ws = int(tw*60*60 * st[0].stats.sampling_rate)
-    Z ,nd = sliding_window(st.select(component='Z')[0].data, ws = ws,hann=True)
-    P ,nd = sliding_window(st.select(component='H')[0].data, ws = ws,hann=True)
+    Z ,nd = _sliding_window(st.select(component='Z')[0].data, ws = ws,hann=True)
+    P ,nd = _sliding_window(st.select(component='H')[0].data, ws = ws,hann=True)
 
     f,Czp = scipy.signal.coherence(Z,P,fs=st[0].stats.sampling_rate,nperseg =nseg,
                                    noverlap=(nseg*0.5),
@@ -1254,10 +1284,11 @@ def coherogram_spectrogram_alpha(st,nseg=2**12,tw =1,f_min = 0.005,f_max = 0.02)
     plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07, wspace=0.02, hspace=0.2)
     plt.tight_layout(pad=1.0, w_pad=0, h_pad=2.0)
 
-#%%
+
 from scipy.signal import stft
 
 def plot_stft(stream,nperseg=2**14):
+  """UNUSED?"""
   fs = stream[0].stats.sampling_rate
   
   """
@@ -1286,8 +1317,9 @@ def plot_stft(stream,nperseg=2**14):
   plt.ylim(0.001,1)
   plt.show()
 
-#%%
+
 def phase_frequency(stream,n = 2**14):
+    """UNUSED???"""
 
     fft_result_z = scipy.fft.fft(stream.select(channel="*Z")[0].data,n=n)
     fft_result_p = scipy.fft.fft(stream.select(channel="*H")[0].data,n=n)
