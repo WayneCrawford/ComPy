@@ -21,7 +21,7 @@ import tiskitpy
 from disba import PhaseDispersion
 
 def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_trsh=0.97,mean_trsh = 0.97,f_min=0.02, f_max=0.06,
-                             filt_freq1=0.005, filt_freq2=0.1, plot_condition = False):
+                             filt_freq1=0.005, filt_freq2=0.1, plot_condition=True):
     '''
     Calculate the pressure gauge gain, using the pressure/acceleration ratio of Rayleigh waves
 
@@ -205,8 +205,8 @@ def calculate_spectral_ratio(stream, inv, zchan="MHZ", pchan="MDG", mag = 7,coh_
                 plt.subplot(513)
                 htrace2 = stream2.select(channel=pchan)[i]
                 ztrace2 = stream2.select(channel=zchan)[i]
-                plt.plot(htrace2.times(), -htrace2.data/np.max(htrace2.data),label='Vertical Acc', color='blue')
-                plt.plot(ztrace2.times(), ztrace2.data/np.max(ztrace2.data), label='pressure', color='r', ls='dashed')
+                plt.plot(ztrace2.times(), ztrace2.data/np.max(htrace2.data),label='Vertical Acc', color='blue')
+                plt.plot(htrace2.times(), -trace2.data/np.max(ztrace2.data), label='pressure', color='r', ls='dashed')
                 # plt.xlim([9.7*10e4,9.8*10e4])
                 plt.xlabel('Time[s]')
                 plt.ylabel('Normalized')
