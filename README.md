@@ -160,8 +160,19 @@ This function rotates seismic data to minimize tilt effects and removes coherenc
 
 ## Calibrate the pressure gauge
 
-We calibrate the pressure gauge by calculaing the pressure-acceleration spectral ratio in the ambient
-Rayleigh wave band and comparing to the expected value
+We calibrate the pressure gauge by calculating the pressure-acceleration spectral
+ratio in the ambient Rayleigh wave band and comparing to the expected value
+
+**This code requires the Python ``disba`` Rayleigh wave mode calculator, which uses
+the mixed-source ``numba`` packages, which should be installed using conda
+instead of pip**.
+
+Install them using:
+
+```console
+conda install numba
+pip install dista
+```
 
 ```python
 import Pressure_calibration as pc
