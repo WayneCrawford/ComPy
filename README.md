@@ -171,7 +171,7 @@ Install them using:
 
 ```console
 conda install numba
-pip install dista
+pip install disba
 ```
 
 ```python
